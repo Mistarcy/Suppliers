@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using Suppliers.Data;
 using Suppliers.Models;
+using Suppliers.Services;
+using Suppliers.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,11 +15,13 @@ namespace Suppliers.Controllers
     [ApiController]
     public class PurchasesController : ControllerBase
     {
-        private readonly MyDbContext _context;
+        private readonly IPurchase _purchaseService;
 
-        public PurchasesController(MyDbContext context)
+        //private readonly MyDbContext _context;
+
+        public PurchasesController(IPurchase purchaseService)
         {
-            _context = context;
+            this._purchaseService = purchaseService;
         }
 
         // GET: api/Purchases
@@ -36,8 +40,8 @@ namespace Suppliers.Controllers
                 return BadRequest(ModelState);
             }
 
-            var puarchase = await _context.Purchase.FindAsync(id);
-
+            //var puarchase = await _context.Purchase.FindAsync(id);
+            var puarchase = await _purchaseService.Find(id);
             if (puarchase == null)
             {
                 return NotFound();
@@ -48,42 +52,28 @@ namespace Suppliers.Controllers
 
         // PUT: api/Puarchases/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutPuarchase([FromForm] int id, [FromForm] Purchase puarchase)
+        public async Task<IActionResult> PutPuarchase([FromForm] int id, [FromForm] Purchase purchase)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            if (id != puarchase.id)
+            if (id != purchase.id)
             {
                 return BadRequest();
             }
 
-            _context.Entry(puarchase).State = EntityState.Modified;
 
-            try
+
+            int num = await _purchaseService.Update(purchase);
+            if (num > 0)
             {
-                int num = await _context.SaveChangesAsync();
-                if (num > 0)
-                {
-                    return Ok(new { code = true, msg = "success" });
-                }
-                else
-                {
-                    return Ok(new { code = false, msg = "failure" });
-                }
+                return Ok(new { code = true, msg = "success" });
             }
-            catch (DbUpdateConcurrencyException)
+            else
             {
-                if (!PurchaseExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return Ok(new { code = false, msg = "failure" });
             }
         }
 
@@ -96,10 +86,13 @@ namespace Suppliers.Controllers
                 return BadRequest(ModelState);
             }
 
-            _context.Purchase.Add(purchase);
-            await _context.SaveChangesAsync();
-            var num = await _context.SaveChangesAsync();
-            if (num > 0)
+            
+            //_context.Purchase.Add(purchase);
+            //await _context.SaveChangesAsync();
+            //var num = await _context.SaveChangesAsync();
+            var res = await _purchaseService.Add(purchase);
+
+            if (res)
             {
                 return Ok(new { code = true, msg = "success" });
             }
@@ -118,21 +111,15 @@ namespace Suppliers.Controllers
                 return BadRequest(ModelState);
             }
 
-            var purchase = await _context.Purchase.FindAsync(id);
-            if (purchase == null)
-            {
-                return NotFound();
-            }
-
-            _context.Purchase.Remove(purchase);
-            await _context.SaveChangesAsync();
-
+            var purchase = await _purchaseService.Delete(id);
             return Ok(purchase);
         }
 
-        private bool PurchaseExists(int id)
+        private async Task<IActionResult> PurchaseExists(int id)
         {
-            return _context.Purchase.Any(e => e.id == id);
+            var res = await _purchaseService.Exists(id);
+            return Ok(res);
         }
+
     }
 }

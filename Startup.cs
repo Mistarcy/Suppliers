@@ -12,6 +12,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Suppliers.Data;
 using Microsoft.EntityFrameworkCore;
 using Suppliers.Controllers;
+using Suppliers.Services.Interfaces;
+using Suppliers.Services;
 
 namespace Suppliers
 {
@@ -40,7 +42,7 @@ namespace Suppliers
             });
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
-           
+            services.AddScoped<IPurchase, PurchaseService>();
             //services.AddTransient<TutorialDbContext>();
         }
 
